@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Button,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { Link } from "expo-router";
+import { LecturasContext } from "@/components/context/LecturasContext";
 
 interface ReadingFile {
   id: string;
@@ -16,7 +18,6 @@ interface ReadingFile {
 
 export default function ReadingList() {
   const [files, setFiles] = useState<ReadingFile[]>([]);
-  const navigation = useNavigation();
 
   useEffect(() => {
     // Aquí cargarías los archivos de lectura. Por ahora usaremos datos simulados.
@@ -33,6 +34,14 @@ export default function ReadingList() {
 
   const currentDate = new Date().toLocaleDateString();
 
+  const {
+    directoryUri,
+    lecturasFiles,
+    requestPermissions,
+    createLecturaFile,
+    readLecturasFiles,
+  } = useContext(LecturasContext);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -40,26 +49,44 @@ export default function ReadingList() {
         <View style={styles.logoPlaceholder} />
         <Text style={styles.title}>Lecturas del día {currentDate}</Text>
       </View>
-      {files.length > 0 ? (
+      {false ? (
         <FlatList
           data={files}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.readingItem}
-              onPress={() =>
-                navigation.navigate("ReadingScreen", {
-                  title: item.title,
-                  content: item.content,
-                })
-              }
-            >
-              <Text style={styles.readingTitle}>{item.title}</Text>
+            <TouchableOpacity style={styles.readingItem}>
+              <Link href={{ pathname: "/Lectura", params: { id: item.id } }}>
+                <Text style={styles.readingTitle}>{item.title}</Text>
+              </Link>
             </TouchableOpacity>
           )}
         />
       ) : (
-        <Text>no files</Text>
+        <View style={{ padding: 20 }}>
+          <Button
+            title="Seleccionar carpeta (SAF)"
+            onPress={requestPermissions}
+          />
+          <Button
+            title="Crear archivo de prueba"
+            onPress={() =>
+              createLecturaFile("mi-archivo.txt", "Contenido de prueba")
+            }
+            disabled={!directoryUri}
+          />
+          <Button
+            title="Leer archivos en la carpeta"
+            onPress={readLecturasFiles}
+            disabled={!directoryUri}
+          />
+
+          <Text style={{ marginTop: 20 }}>Carpeta actual: {directoryUri}</Text>
+          <Text>Archivos listados:</Text>
+          {lecturasFiles.map((file, index) => (
+            <Text key={index}>{file}</Text>
+          ))}
+          <Link href={"/welcome"}>Ir a la pantalla de bienvenida</Link>
+        </View>
       )}
     </View>
   );
