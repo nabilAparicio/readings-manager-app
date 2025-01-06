@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    height: 650,
+    height: "50%",
     resizeMode: "contain",
     alignSelf: "center",
     marginBottom: 24,
@@ -82,7 +82,6 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 16,
-    paddingHorizontal: 50,
     marginVertical: 16,
     textAlign: "center",
     color: "#555",

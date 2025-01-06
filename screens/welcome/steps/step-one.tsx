@@ -32,7 +32,7 @@ export default function StepOne({ handleNextStep }: StepOneProps) {
 const styles = StyleSheet.create({
   image: {
     width: "100%",
-    height: 650,
+    height: "50%",
     resizeMode: "contain",
     alignSelf: "center",
     marginBottom: 24,
