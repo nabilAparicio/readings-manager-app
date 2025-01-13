@@ -1,0 +1,4 @@
+- crear la persistencia de las configuraciones en el local storage 
+- crear el modal reutilizable 
+- implementar modal de confimacion para salir con temporizador para el boton de exit
+- implementar modal de cambio de nombre de archivo y lector 
