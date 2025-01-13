@@ -8,18 +8,26 @@ import { router } from "expo-router";
 interface LecturasContextType {
   directoryUri: string | null;
   lecturasFiles: string[];
+  editMode: boolean;
+  setLecturasFiles: (files: string[]) => void;
   requestPermissions: () => Promise<void>;
   createLecturaFile: (filename: string, content: string) => Promise<void>;
   readLecturasFiles: () => Promise<void>;
+  ActiveEditMode: () => void;
+  DisableEditMode: () => void;
 }
 
 // Creación del contexto con valores por defecto
 export const LecturasContext = createContext<LecturasContextType>({
   directoryUri: "",
   lecturasFiles: [],
+  editMode: false,
+  setLecturasFiles: () => {},
   requestPermissions: async () => {},
   createLecturaFile: async () => {},
   readLecturasFiles: async () => {},
+  ActiveEditMode: () => {},
+  DisableEditMode: () => {},
 });
 
 export function LecturasProvider({ children }: { children: ReactNode }) {
@@ -27,6 +35,8 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
   const [directoryUri, setDirectoryUri] = useState<string | null>(null);
   // Lista de archivos en la carpeta elegida
   const [lecturasFiles, setLecturasFiles] = useState<string[]>([]);
+  // Modo edicion
+  const [editMode, setEditMode] = useState<boolean>(false);
 
   /**
    * 1. Pide al usuario que seleccione (y autorice) una carpeta.
@@ -120,15 +130,29 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
     SplashScreen.hideAsync();
   }, [directoryUri]);
 
+  // 5. Activa el modo edición
+  const ActiveEditMode = () => {
+    setEditMode(true);
+  };
+
+  // 6. Desactiva el modo edición
+  const DisableEditMode = () => {
+    setEditMode(false);
+  };
+
   // Retornamos el proveedor con las funciones y estados expuestos
   return (
     <LecturasContext.Provider
       value={{
         directoryUri,
         lecturasFiles,
+        editMode,
+        setLecturasFiles,
         requestPermissions,
         createLecturaFile,
         readLecturasFiles,
+        ActiveEditMode,
+        DisableEditMode,
       }}
     >
       {children}

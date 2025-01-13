@@ -11,18 +11,11 @@ import {
   getFileNameWithoutExtension,
 } from "@/utils/format-path-name";
 import OptionsButton from "./options-button";
+import { Reorder } from "@/assets/icons";
 
 const List = () => {
-  const { lecturasFiles } = useContext(LecturasContext);
-
-  // Guardamos el array de archivos en un estado local para poder actualizar su orden.
-  const [data, setData] = useState<string[]>([]);
-
-  // Cuando lecturasFiles cambie (por ejemplo, si se vuelve a leer la carpeta),
-  // sincronizamos el estado local para reflejar esos cambios.
-  useEffect(() => {
-    setData(lecturasFiles);
-  }, [lecturasFiles]);
+  const { lecturasFiles, editMode, setLecturasFiles } =
+    useContext(LecturasContext);
 
   // Al hacer clic, navegamos a la lectura correspondiente.
   const openReading = (index: number) => {
@@ -37,21 +30,39 @@ const List = () => {
     isActive,
   }: RenderItemParams<string>) => {
     return (
-      <ScaleDecorator>
+      <ScaleDecorator activeScale={1.03}>
         <TouchableOpacity
           style={[
             styles.itemContainer,
-            { backgroundColor: isActive ? "#ccc" : "#f1f1f1" }, // feedback de arrastre
+            isActive ? styles.activeItem : styles.inactiveItem,
           ]}
           onPress={() => openReading(getIndex() || 0)}
-          onLongPress={drag}
-          disabled={isActive}
+          disabled={isActive || editMode}
         >
-          <View>
-            <Text style={styles.itemText}>
-              {getFileNameWithoutExtension(getFileName(item) || "")}
-            </Text>
-            <Text style={styles.itemSubText}>Orlando Aparicio</Text>
+          <View style={styles.rowBetween}>
+            <View>
+              <View style={styles.textContainer}>
+                <Text style={styles.itemText}>
+                  {getFileNameWithoutExtension(getFileName(item) || "")}
+                </Text>
+              </View>
+              <View style={styles.textContainer}>
+                <Text style={styles.itemSubText}>Orlando Aparicio</Text>
+              </View>
+            </View>
+            {editMode && (
+              <>
+                <TouchableOpacity style={styles.editButton}>
+                  <Text style={styles.editButtonText}>Editar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onLongPress={drag}
+                  style={styles.reorderButton}
+                >
+                  <Reorder />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </TouchableOpacity>
       </ScaleDecorator>
@@ -61,12 +72,10 @@ const List = () => {
   return (
     <>
       <DraggableFlatList
-        data={data}
+        data={lecturasFiles}
         keyExtractor={(item, index) => `${item}-${index}`}
         renderItem={renderItem}
-        // Se llama cuando sueltas el ítem arrastrado;
-        // aquí actualizamos el orden final de 'data'.
-        onDragEnd={({ data }) => setData(data)}
+        onDragEnd={({ data }) => setLecturasFiles(data)}
         contentContainerStyle={styles.listContainer}
       />
       <OptionsButton />
@@ -81,9 +90,25 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   itemContainer: {
+    marginHorizontal: 24,
     marginBottom: 8,
     padding: 12,
     borderRadius: 8,
+  },
+  activeItem: {
+    backgroundColor: "#ccc", // feedback de arrastre al hacer drag
+  },
+  inactiveItem: {
+    backgroundColor: "#f1f1f1",
+  },
+  rowBetween: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  textContainer: {
+    alignSelf: "flex-start",
+    padding: 1,
   },
   itemText: {
     fontSize: 16,
@@ -93,5 +118,23 @@ const styles = StyleSheet.create({
   itemSubText: {
     fontSize: 14,
     color: "#666",
+  },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 8,
+    marginLeft: "auto",
+    marginRight: 8,
+    backgroundColor: "#5eafff",
+  },
+  editButtonText: {
+    color: "#000",
+  },
+  reorderButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
 });

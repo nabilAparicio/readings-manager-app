@@ -17,7 +17,8 @@ export default function ReadingList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+    paddingVertical: 24,
+    overflow: "visible",
     backgroundColor: "#FFF",
   },
 });
