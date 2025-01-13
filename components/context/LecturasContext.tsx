@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ReactNode } from "react";
 import * as FileSystem from "expo-file-system";
+import * as SplashScreen from "expo-splash-screen";
+import { router } from "expo-router";
 
 // Tipos para el contexto
 interface LecturasContextType {
-  directoryUri: string;
+  directoryUri: string | null;
   lecturasFiles: string[];
   requestPermissions: () => Promise<void>;
   createLecturaFile: (filename: string, content: string) => Promise<void>;
@@ -22,7 +24,7 @@ export const LecturasContext = createContext<LecturasContextType>({
 
 export function LecturasProvider({ children }: { children: ReactNode }) {
   // URI de la carpeta que el usuario selecciona vía SAF
-  const [directoryUri, setDirectoryUri] = useState<string>("");
+  const [directoryUri, setDirectoryUri] = useState<string | null>(null);
   // Lista de archivos en la carpeta elegida
   const [lecturasFiles, setLecturasFiles] = useState<string[]>([]);
 
@@ -66,7 +68,6 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
           "text/plain"
         );
       console.log("Archivo creado en:", newFileUri);
-
       // Escribe el contenido en ese archivo
       await FileSystem.StorageAccessFramework.writeAsStringAsync(
         newFileUri,
@@ -91,12 +92,19 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
 
     try {
       // Obtiene la lista de archivos en la carpeta
-      const files = await FileSystem.StorageAccessFramework.readDirectoryAsync(
-        directoryUri
-      );
+      const allFiles =
+        await FileSystem.StorageAccessFramework.readDirectoryAsync(
+          directoryUri
+        );
 
-      setLecturasFiles(files);
-      console.log("Archivos en carpeta seleccionada:", files);
+      // Filtra los archivos para incluir solo .png y .jpg
+      const filteredFiles = allFiles.filter((file) => {
+        const lowerFile = file.toLowerCase();
+        return lowerFile.endsWith(".png") || lowerFile.endsWith(".jpg");
+      });
+
+      setLecturasFiles(filteredFiles);
+      console.log("Archivos en carpeta seleccionada (png/jpg):", filteredFiles);
     } catch (error) {
       console.error("Error al leer archivos de la carpeta:", error);
     }
@@ -104,11 +112,12 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
 
   // 4. (Opcional) Si quisieras re-leer archivos al cambiar de carpeta automáticamente.
   useEffect(() => {
-    // Cada vez que el usuario seleccione una carpeta distinta, podríamos leerla
-    // automáticamente. Eso depende de tu preferencia.
     if (directoryUri) {
       readLecturasFiles();
+    } else {
+      router.replace("/welcome");
     }
+    SplashScreen.hideAsync();
   }, [directoryUri]);
 
   // Retornamos el proveedor con las funciones y estados expuestos

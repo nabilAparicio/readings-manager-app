@@ -2,11 +2,16 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import StepOne from "./steps/step-one";
 import StepTwo from "./steps/step-two";
+import { router } from "expo-router";
 
 export default function Welcome() {
   const [step, setStep] = React.useState(1);
 
   const handleNextStep = () => {
+    if (step === 2) {
+      router.replace("/list");
+      return;
+    }
     setStep(step + 1);
   };
 

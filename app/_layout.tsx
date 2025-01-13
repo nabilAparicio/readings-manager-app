@@ -23,7 +23,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.preventAutoHideAsync();
     }
   }, [loaded]);
 
@@ -37,9 +37,23 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="+not-found" />
           <Stack.Screen
+            name="reading"
+            options={{
+              title: "Lectura",
+            }}
+          />
+          <Stack.Screen
+            name="list"
+            options={{
+              title: "Lecturas",
+            }}
+          />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen
             name="welcome"
             options={{
               headerShown: false,
+              animation: "fade",
             }}
           />
         </Stack>

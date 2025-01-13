@@ -1,6 +1,7 @@
 import { LecturasContext } from "@/components/context/LecturasContext";
 import React, { useContext } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { getFileName, getFolderName } from "../../../utils/format-path-name";
 
 interface AuthorizeFolderScreenProps {
   handleNextStep: () => void;
@@ -10,8 +11,6 @@ export default function AuthorizeFolderScreen({
   handleNextStep,
 }: AuthorizeFolderScreenProps) {
   const { directoryUri, requestPermissions } = useContext(LecturasContext);
-
-  const folderName = directoryUri ? directoryUri.split("/").pop() : "";
 
   const isFolderAuthorized = Boolean(directoryUri && directoryUri.length > 0);
 
@@ -32,7 +31,9 @@ export default function AuthorizeFolderScreen({
       {isFolderAuthorized && (
         <View style={styles.folderInfoContainer}>
           <Text style={styles.folderTitle}>Carpeta Seleccionada:</Text>
-          <Text style={styles.folderName}>{folderName}</Text>
+          <Text style={styles.folderName}>
+            {getFolderName(directoryUri || "")}
+          </Text>
           <Text style={styles.folderPath}>{directoryUri}</Text>
         </View>
       )}
