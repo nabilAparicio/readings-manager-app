@@ -9,7 +9,7 @@ export default function Welcome() {
 
   const handleNextStep = () => {
     if (step === 2) {
-      router.replace("/list");
+      router.replace("/");
       return;
     }
     setStep(step + 1);

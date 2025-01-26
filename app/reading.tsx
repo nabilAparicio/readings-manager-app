@@ -4,8 +4,8 @@ import { useLocalSearchParams } from "expo-router";
 import { LecturasContext } from "@/components/context/LecturasContext";
 
 export default function Reading() {
-  const { lecturasFiles } = useContext(LecturasContext);
-  const { readingIndex } = useLocalSearchParams();
+  const { lecturas } = useContext(LecturasContext);
+  const { lecturaID } = useLocalSearchParams();
 
   const screenWidth = Dimensions.get("window").width;
   const screenHeight = Dimensions.get("window").height;
@@ -14,7 +14,7 @@ export default function Reading() {
     <ScrollView style={styles.container}>
       <Image
         source={{
-          uri: lecturasFiles[+readingIndex],
+          uri: lecturas.find((lectura) => lectura.id === lecturaID)?.uri,
         }}
         style={{
           width: screenWidth,

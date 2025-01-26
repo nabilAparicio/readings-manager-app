@@ -9,7 +9,7 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 
-interface ReusableModalProps {
+interface ModalProps {
   visible: boolean;
   onClose?: () => void;
   children?: React.ReactNode;
@@ -17,11 +17,7 @@ interface ReusableModalProps {
 
 const { height } = Dimensions.get("window");
 
-export const ReusableModal: React.FC<ReusableModalProps> = ({
-  visible,
-  onClose,
-  children,
-}) => {
+export const Modal: React.FC<ModalProps> = ({ visible, onClose, children }) => {
   // Valor compartido para la animación (0 = cerrado, 1 = abierto)
   const modalAnimation = useSharedValue(0);
 

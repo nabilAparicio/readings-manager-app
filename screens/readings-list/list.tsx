@@ -1,34 +1,85 @@
+import { Reorder } from "@/assets/icons";
+import { LecturasContext } from "@/components/context/LecturasContext";
+import { router } from "expo-router";
 import React, { useContext, useState, useEffect } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  TextInput,
+  KeyboardAvoidingView,
+} from "react-native";
 import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
-import { LecturasContext } from "@/components/context/LecturasContext";
-import { router } from "expo-router";
-import {
-  getFileName,
-  getFileNameWithoutExtension,
-} from "@/utils/format-path-name";
 import OptionsButton from "./options-button";
-import { Reorder } from "@/assets/icons";
 
 const List = () => {
-  const { lecturasFiles, editMode, setLecturasFiles } =
+  const { lecturas, editMode, setLecturas, renameLecturaFile, setLectorName } =
     useContext(LecturasContext);
 
-  // Al hacer clic, navegamos a la lectura correspondiente.
-  const openReading = (index: number) => {
-    router.push(`/reading?readingIndex=${index}`);
+  // Estado para manejar las ediciones
+  const [editingItems, setEditingItems] = useState<{
+    [key: string]: { nombre: string; lector: string };
+  }>({});
+
+  // Limpiar ediciones al salir del modo edición
+  useEffect(() => {
+    if (!editMode) setEditingItems({});
+  }, [editMode]);
+
+  const openReading = (ID: string) => {
+    router.push(`/reading?lecturaID=${ID}`);
   };
 
-  // Render de cada ítem, incluyendo la lógica para permitir arrastre
+  const handleEdit = (item: any) => {
+    setEditingItems((prev) => ({
+      ...prev,
+      [item.id]: { nombre: item.nombre, lector: item.lector },
+    }));
+  };
+
+  const handleSave = async (itemId: string) => {
+    const tempItem = editingItems[itemId];
+    const originalItem = lecturas.find((l) => l.id === itemId);
+
+    if (!tempItem || !originalItem) return;
+
+    try {
+      if (tempItem.nombre !== originalItem.nombre) {
+        await renameLecturaFile(itemId, tempItem.nombre);
+      }
+
+      if (tempItem.lector !== originalItem.lector) {
+        setLectorName(itemId, tempItem.lector);
+      }
+
+      setEditingItems((prev) => {
+        const newState = { ...prev };
+        delete newState[itemId];
+        return newState;
+      });
+    } catch (error) {
+      console.error("Error al guardar:", error);
+    }
+  };
+
   const renderItem = ({
     item,
     drag,
     getIndex,
     isActive,
-  }: RenderItemParams<string>) => {
+  }: RenderItemParams<{
+    id: string;
+    uri: string;
+    nombre: string;
+    lector: string;
+    orden: number;
+  }>) => {
+    const isEditing = !!editingItems[item.id];
+
     return (
       <ScaleDecorator activeScale={1.03}>
         <TouchableOpacity
@@ -36,25 +87,59 @@ const List = () => {
             styles.itemContainer,
             isActive ? styles.activeItem : styles.inactiveItem,
           ]}
-          onPress={() => openReading(getIndex() || 0)}
+          onPress={() => openReading(item.id)}
           disabled={isActive || editMode}
+          onLongPress={editMode ? drag : undefined}
         >
           <View style={styles.rowBetween}>
-            <View>
-              <View style={styles.textContainer}>
-                <Text style={styles.itemText}>
-                  {getFileNameWithoutExtension(getFileName(item) || "")}
-                </Text>
-              </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.itemSubText}>Orlando Aparicio</Text>
-              </View>
+            <View style={styles.textContainer}>
+              {isEditing ? (
+                <>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editingItems[item.id].nombre}
+                    onChangeText={(text) =>
+                      setEditingItems((prev) => ({
+                        ...prev,
+                        [item.id]: { ...prev[item.id], nombre: text },
+                      }))
+                    }
+                  />
+                  <TextInput
+                    style={styles.editInput}
+                    value={editingItems[item.id].lector}
+                    onChangeText={(text) =>
+                      setEditingItems((prev) => ({
+                        ...prev,
+                        [item.id]: { ...prev[item.id], lector: text },
+                      }))
+                    }
+                    placeholder="Sin lector"
+                  />
+                </>
+              ) : (
+                <>
+                  <Text style={styles.itemText}>{item.nombre}</Text>
+                  <Text style={styles.itemSubText}>
+                    {item.lector || "Sin lector"}
+                  </Text>
+                </>
+              )}
             </View>
+
             {editMode && (
               <>
-                <TouchableOpacity style={styles.editButton}>
-                  <Text style={styles.editButtonText}>Editar</Text>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() =>
+                    isEditing ? handleSave(item.id) : handleEdit(item)
+                  }
+                >
+                  <Text style={styles.editButtonText}>
+                    {isEditing ? "Guardar" : "Editar"}
+                  </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   onLongPress={drag}
                   style={styles.reorderButton}
@@ -71,14 +156,29 @@ const List = () => {
 
   return (
     <>
-      <DraggableFlatList
-        data={lecturasFiles}
-        keyExtractor={(item, index) => `${item}-${index}`}
-        renderItem={renderItem}
-        onDragEnd={({ data }) => setLecturasFiles(data)}
-        contentContainerStyle={styles.listContainer}
-      />
-      <OptionsButton />
+      <KeyboardAvoidingView
+        behavior="padding"
+        style={{ flex: 1, paddingBottom: 24 }}
+      >
+        <Text
+          style={{
+            textAlign: "center",
+            fontSize: 24,
+            fontWeight: "bold",
+            marginBottom: 16,
+          }}
+        >
+          Lista de lecturas
+        </Text>
+        <DraggableFlatList
+          data={[...lecturas]}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          onDragEnd={({ data }) => setLecturas(data)}
+          contentContainerStyle={styles.listContainer}
+        />
+        <OptionsButton />
+      </KeyboardAvoidingView>
     </>
   );
 };
@@ -96,7 +196,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeItem: {
-    backgroundColor: "#ccc", // feedback de arrastre al hacer drag
+    backgroundColor: "#ccc",
   },
   inactiveItem: {
     backgroundColor: "#f1f1f1",
@@ -107,8 +207,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   textContainer: {
-    alignSelf: "flex-start",
-    padding: 1,
+    flex: 1,
+    marginRight: 8,
   },
   itemText: {
     fontSize: 16,
@@ -120,21 +220,24 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   editButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    backgroundColor: "#5eafff",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginTop: 8,
-    marginLeft: "auto",
-    marginRight: 8,
-    backgroundColor: "#5eafff",
+    marginLeft: 8,
   },
   editButtonText: {
     color: "#000",
   },
   reorderButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingLeft: 8,
+  },
+  editInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 4,
+    padding: 8,
+    marginBottom: 4,
+    backgroundColor: "white",
   },
 });

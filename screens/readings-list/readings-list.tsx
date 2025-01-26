@@ -5,11 +5,11 @@ import List from "./list";
 import NoFiles from "./no-files";
 
 export default function ReadingList() {
-  const { lecturasFiles } = useContext(LecturasContext);
+  const { lecturas } = useContext(LecturasContext);
 
   return (
     <View style={styles.container}>
-      {lecturasFiles && lecturasFiles.length > 0 ? <List /> : <NoFiles />}
+      {lecturas && lecturas.length > 0 ? <List /> : <NoFiles />}
     </View>
   );
 }
@@ -17,7 +17,7 @@ export default function ReadingList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingVertical: 24,
+    paddingTop: 24,
     overflow: "visible",
     backgroundColor: "#FFF",
   },
