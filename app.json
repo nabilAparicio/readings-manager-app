@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "lecturas",
+    "name": "Lecturas Devocional",
     "slug": "lecturas",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.temploPanama.lecturas"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9d0c94ca-0885-4f41-9dd5-3d0cc9522ce9"
+      },
+      "cli": {
+        "appVersionSource": "local"
+      }
     }
   }
 }

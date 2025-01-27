@@ -75,6 +75,7 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
 
         // Guardamos en AsyncStorage
         await AsyncStorage.setItem(DIRECTORY_URI_KEY, permissions.directoryUri);
+        await readLecturasFiles();
 
         console.log("Carpeta seleccionada:", permissions.directoryUri);
       } else {
@@ -219,8 +220,7 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error("Error cargando directoryUri:", error);
       } finally {
-        // Oculamos el SplashScreen
-        await SplashScreen.hideAsync();
+        setTimeout(() => SplashScreen.hideAsync(), 1000);
       }
     })();
   }, []);
