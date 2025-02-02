@@ -48,6 +48,7 @@ export default function RootLayout() {
               name="reading"
               options={{
                 title: "Lectura",
+                headerShown: false,
               }}
             />
             <Stack.Screen

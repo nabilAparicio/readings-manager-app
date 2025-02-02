@@ -2,7 +2,7 @@ import React, { createContext, useEffect, useState } from "react";
 import { ReactNode } from "react";
 import * as FileSystem from "expo-file-system";
 import * as SplashScreen from "expo-splash-screen";
-import { router, useNavigation } from "expo-router";
+import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /** Estructura de cada archivo/lectura */
@@ -87,8 +87,10 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Crea un archivo (texto) dentro de la carpeta seleccionada,
-   * y luego invoca readLecturasFiles() para volver a hacer el merge.
+   * Crea un archivo en la carpeta seleccionada.
+   * - Detecta la extensión para asignar mime-type (PNG, JPG, PDF o texto).
+   * - Después lo escribe con el contenido que se pase.
+   * - Finalmente, vuelve a leer la carpeta para hacer el merge (readLecturasFiles).
    */
   const createLecturaFile = async (filename: string, content: string) => {
     if (!directoryUri) {
@@ -98,17 +100,30 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Detectar la extensión para asignar el mime-type correcto
+    const extension = filename.split(".").pop()?.toLowerCase();
+    let mimeType = "text/plain";
+    if (extension === "pdf") {
+      mimeType = "application/pdf";
+    } else if (extension === "png") {
+      mimeType = "image/png";
+    } else if (extension === "jpg" || extension === "jpeg") {
+      mimeType = "image/jpg";
+    }
+
     try {
       // Crea el archivo en la carpeta SAF seleccionada
       const newFileUri =
         await FileSystem.StorageAccessFramework.createFileAsync(
           directoryUri,
           filename,
-          "text/plain"
+          mimeType
         );
       console.log("Archivo creado en:", newFileUri);
 
       // Escribe el contenido en el archivo
+      // - Para PDFs o imágenes, probablemente quieras escribir en base64.
+      //   En este ejemplo asumimos que "content" es texto o base64 según corresponda.
       await FileSystem.StorageAccessFramework.writeAsStringAsync(
         newFileUri,
         content
@@ -122,7 +137,7 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Lee todos los archivos .png/.jpg de la carpeta y los
+   * Lee todos los archivos .png/.jpg/.pdf de la carpeta y los
    * "mergea" con los datos locales que haya en AsyncStorage.
    * - Elimina del estado aquellos que ya no existen en el disco.
    * - Añade los nuevos que aparezcan en el disco.
@@ -131,8 +146,8 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
    * - Finalmente, guarda la lista resultante en AsyncStorage.
    */
   const readLecturasFiles = async () => {
-    const directoryUri = await AsyncStorage.getItem(DIRECTORY_URI_KEY);
-    if (!directoryUri) {
+    const dirUri = await AsyncStorage.getItem(DIRECTORY_URI_KEY);
+    if (!dirUri) {
       console.warn("No se ha seleccionado ninguna carpeta para leer archivos.");
       return;
     }
@@ -146,23 +161,26 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
 
       // 2. Listar archivos en la carpeta
       const allFiles =
-        await FileSystem.StorageAccessFramework.readDirectoryAsync(
-          directoryUri
-        );
+        await FileSystem.StorageAccessFramework.readDirectoryAsync(dirUri);
 
-      // 3. Filtrar sólo .png / .jpg
+      // 3. Filtrar sólo .png / .jpg / .pdf
       const filteredFiles = allFiles.filter((file) => {
         const lower = file.toLowerCase();
-        return lower.endsWith(".png") || lower.endsWith(".jpg");
+        return (
+          lower.endsWith(".png") ||
+          lower.endsWith(".jpg") ||
+          lower.endsWith(".pdf")
+        );
       });
 
-      // 4. Generamos la nueva lista de lecturas
+      // 4. Generar la nueva lista de lecturas
       const mergedLecturas: Lectura[] = filteredFiles.map((fileUri, index) => {
         // Nombre real del archivo
         const decodedUri = decodeURIComponent(fileUri);
         const splitted = decodedUri.split("/");
         const fileName = splitted[splitted.length - 1] || decodedUri;
-        const fileNameWithoutExt = fileName.replace(/\.(png|jpg)$/i, "");
+        // Quitamos la extensión (.png, .jpg, .pdf)
+        const fileNameWithoutExt = fileName.replace(/\.(png|jpg|pdf)$/i, "");
 
         // ¿Existen metadatos previos en local?
         const oldLectura = localLecturas.find((l) => l.uri === fileUri);
@@ -201,7 +219,7 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
    * useEffect que se dispara al montar el Provider:
    * 1) Busca el directoryUri guardado en AsyncStorage.
    * 2) Si existe, lo pone en estado y luego hace `readLecturasFiles()`.
-   * 3) Si no existe, navega a /welcome.
+   * 3) Si no existe, navega a /welcome (o la ruta que prefieras).
    * 4) Finalmente, quita el SplashScreen.
    */
   useEffect(() => {
@@ -220,6 +238,8 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error("Error cargando directoryUri:", error);
       } finally {
+        // Ocultamos el splash tras un pequeño retraso para asegurarnos de que la app
+        // haya terminado la lógica inicial (puedes ajustar según tus necesidades).
         setTimeout(() => SplashScreen.hideAsync(), 1000);
       }
     })();
@@ -233,7 +253,8 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
 
   /**
    * Renombrar físicamente un archivo en la carpeta SAF y actualizar la lista.
-   * - Copiamos el contenido en base64, creamos nuevo archivo, borramos el anterior.
+   * - Copiamos el contenido en base64, creamos nuevo archivo con el nuevo nombre,
+   *   y borramos el anterior.
    * - Actualizamos en el estado con la nueva URI y el nuevo nombre.
    * - Guardamos en AsyncStorage.
    */
@@ -253,9 +274,30 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
 
       const oldLectura = lecturas[lecturaIndex];
       const oldUri = oldLectura.uri;
-      const fileExtension = oldUri.toLowerCase().endsWith(".png")
-        ? "png"
-        : "jpg";
+      const lowerUri = oldUri.toLowerCase();
+
+      // Detectar extensión original
+      let fileExtension = "";
+      if (lowerUri.endsWith(".png")) {
+        fileExtension = "png";
+      } else if (lowerUri.endsWith(".jpg")) {
+        fileExtension = "jpg";
+      } else if (lowerUri.endsWith(".pdf")) {
+        fileExtension = "pdf";
+      } else {
+        // Por defecto, asumimos jpg si no encontramos nada
+        fileExtension = "jpg";
+      }
+
+      // Determinar mime-type
+      let mimeType = "";
+      if (fileExtension === "png") {
+        mimeType = "image/png";
+      } else if (fileExtension === "jpg") {
+        mimeType = "image/jpg";
+      } else if (fileExtension === "pdf") {
+        mimeType = "application/pdf";
+      }
 
       // 2. Leer su contenido en base64
       const base64Data =
@@ -268,7 +310,7 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
         await FileSystem.StorageAccessFramework.createFileAsync(
           directoryUri,
           `${newName}.${fileExtension}`,
-          `image/${fileExtension}`
+          mimeType
         );
 
       // 4. Escribir contenido base64 en el nuevo archivo
@@ -288,7 +330,9 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
           ...oldLectura,
           uri: newFileUri,
           nombre: newName,
-          id: id, // Podemos usar la nueva URI como id
+          // Conservamos el mismo id,
+          // si prefieres usar la nueva URI como id, cámbialo.
+          id,
         };
         return copy;
       });
