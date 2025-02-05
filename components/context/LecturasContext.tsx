@@ -5,16 +5,14 @@ import * as SplashScreen from "expo-splash-screen";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-/** Estructura de cada archivo/lectura */
 interface Lectura {
-  id: string; // ID único (draggable, etc.)
-  uri: string; // Path completo al archivo
-  nombre: string; // Nombre sin extensión (lo que se muestra)
-  lector: string; // Nombre del lector asignado (o metadato)
-  orden: number; // Índice/orden en la lista
+  id: string;
+  uri: string;
+  nombre: string;
+  lector: string;
+  orden: number;
 }
 
-/** Tipos para el contexto */
 interface LecturasContextType {
   directoryUri: string | null;
   lecturas: Lectura[];
@@ -239,7 +237,6 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
         console.error("Error cargando directoryUri:", error);
       } finally {
         // Ocultamos el splash tras un pequeño retraso para asegurarnos de que la app
-        // haya terminado la lógica inicial (puedes ajustar según tus necesidades).
         setTimeout(() => SplashScreen.hideAsync(), 1000);
       }
     })();
@@ -331,7 +328,6 @@ export function LecturasProvider({ children }: { children: ReactNode }) {
           uri: newFileUri,
           nombre: newName,
           // Conservamos el mismo id,
-          // si prefieres usar la nueva URI como id, cámbialo.
           id,
         };
         return copy;
